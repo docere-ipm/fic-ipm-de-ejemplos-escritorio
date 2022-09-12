@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from future import __annotations__
+from __future__ import annotations
 from typing import Optional
 
 
@@ -38,7 +38,7 @@ class View:
     # Esta no es la única forma de implementar esta parte. Por
     # ejemplo, en vez de pasar el Presenter como parámetro, podíamos
     # tener un método `View.connect_to(:Presenter)`
-    def build(self, app: Gtk.Application, presenter: 'Presenter') -> None:
+    def build(self, app: Gtk.Application, presenter: Presenter) -> None:
         win = Gtk.ApplicationWindow(
             title= "¡Hola Mundo!",
         )    
@@ -47,7 +47,7 @@ class View:
         win.set_child(self.counter(presenter))
         win.present()
 
-    def counter(self, presenter: 'Presenter') -> Gtk.Widget:
+    def counter(self, presenter: Presenter) -> Gtk.Widget:
         box = Gtk.Box(
             orientation= Gtk.Orientation.VERTICAL,
             homogeneous= False,
