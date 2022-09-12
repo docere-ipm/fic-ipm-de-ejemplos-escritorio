@@ -4,34 +4,45 @@ import gi
 gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk
 
-# En otros lenguajes, esto sería una constante.
+
 WINDOW_PADDING: int = 24
 
 
+# Vamos a añadir estado a la aplicación. Como no tenemos ningún
+# patrón para aplicar, haremos una chapuza con variables globales.
+state: int = 0
+label: Gtk.Label = None
+
+# TIP: Si metemos todo esto en una clase, sigue siendo la misma
+# chapuza. En vez de tener todo global en el ámbito del módulo, lo
+# tenemos en el ámbito de una clase.
+
+
+# Función de utilidad que calcula el texto a mostrar en la etiqueta a
+# partir del estado
+def get_label_text() -> str:
+    if state == 1:
+        return "I've said hello 1 time"
+    else:
+        return f"I've said hello {state} times"
+    
+    
 def on_say_hello_clicked(w: Gtk.Widget) -> None:
-    print("Hello!")
+    # Modificamos el estado
+    global state
+    state = state + 1
 
+    # Actualizamos la vista
+    label.set_label(get_label_text())
 
-# Si tenemos más de un widget dentro de la ventana, tenemos que
-# resolver el _layout_:
-#
-#   - ¿ Cómo indicamos la posición de cada uno ?
-#   - ¿ Cómo indicamos el tamaño de cada uno ?
-#
-# a. En entornos siempre iguales y conocidos (muy raro):
-#    coordenadas y tamaño en pixels
-#
-# b. _Containers_, _contenedores_: objetos que calculan el layout
-#    de sus hijos según un criterio.
+    # Importante: dejamos de imprimir en la salida estándar. Estuvo
+    # bien para hacer un ejemplo rápido, pero esto es una interface
+    # gráfica, la salida en el terminal no está incluida.
 
 
 def counter() -> Gtk.Widget:
-    # `Box` es un contenedor básico, dispone sus hijos en línea,
-    # vertical u horizontal.
-    #
-    # En esta aplicación no se da el caso, pero un container puede ser
-    # hijo de otro container. Esto nos permite crear layouts
-    # complejos.
+    # Queremos modificar la variable global
+    global label
     box = Gtk.Box(
         orientation= Gtk.Orientation.VERTICAL,
         homogeneous= False,
@@ -42,7 +53,8 @@ def counter() -> Gtk.Widget:
         margin_start= WINDOW_PADDING
     )
     label = Gtk.Label(
-        label= "Hello!",
+        # Importante: inicializar a partir del estado
+        label= get_label_text(),
         halign= Gtk.Align.CENTER,
         vexpand= True
     )
@@ -62,11 +74,6 @@ def on_activate(app: Gtk.Application) -> None:
     )    
     app.add_window(win)
     win.connect("destroy", lambda win: win.close())
-    # La parte que crea los widgets contenidos en la ventana la
-    # separamos a otra función para organizar el código.
-    #
-    # El código que crea la interface suele ser largo. La manera de
-    # organizarlo ya va en el estilo de programación.
     win.set_child(counter())
     win.present()
 
