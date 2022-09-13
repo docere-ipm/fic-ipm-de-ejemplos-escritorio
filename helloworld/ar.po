@@ -1,0 +1,33 @@
+# Arabic translations for PACKAGE package.
+# Copyright (C) 2022 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# David Cabrero Souto <cabrero@nuizin.madsgroup.pri>, 2022.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-09-13 21:06+0200\n"
+"PO-Revision-Date: 2022-09-13 18:29+0200\n"
+"Last-Translator: David Cabrero Souto <cabrero@madsgroup.pri>\n"
+"Language-Team: Arabic <(nothing)>\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=(n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5);\n"
+
+#: helloworld.py:42
+#, python-brace-format
+msgid "I've said hello {0} time"
+msgid_plural "I've said hello {0} times"
+msgstr[0] "لقد قلت مرحبًا مرة {0}"
+msgstr[1] "لقد قلت مرحبًا مرة {0}"
+
+#: helloworld.py:56
+msgid "Hello World!"
+msgstr "iمرحبا بالعالم"
+
+#: helloworld.py:79
+msgid "Say Hello"
+msgstr "قل مرحبا"
