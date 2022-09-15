@@ -19,9 +19,6 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk
 
 
-# Creamos un "alias" para las funciones de traducción con un nombre
-# más corto.
-# La convención es ' _' y 'N_'.
 _ = gettext.gettext
 N_ = gettext.ngettext
 
@@ -30,6 +27,8 @@ class State:
     count: int= 0
 
     def incr_count(self, step: int= 1) -> None:
+        import time
+        time.sleep(10)
         self.count += step
 
     def get_count(self) -> int:
@@ -37,7 +36,6 @@ class State:
 
 
 def get_count_text(count: int) -> str:
-    # Las f-strings no son internacionalizables
     return N_(
         "I've said hello {0} time",
         "I've said hello {0} times",
@@ -52,7 +50,6 @@ class View:
 
     def build(self, app: Gtk.Application, presenter: Presenter) -> None:
         win = Gtk.ApplicationWindow(
-            # Por defecto todos los textos están en ingles
             title= _("Hello World!"),
         )    
         app.add_window(win)
@@ -105,6 +102,8 @@ class Presenter:
         self._update_count()
         
     def on_say_hello_clicked(self, _w: Gtk.Widget) -> None:
+        # Esta operación va a tardar mucho y nos deja bloqueada la interface
+        # ¿ Solución ?
         self.state.incr_count()
         self._update_count()
 
@@ -113,52 +112,12 @@ class Presenter:
 
         
 if __name__ == '__main__':
-    # Primero vamos a inicalizar el soporte de traducciones.
-
-    # El primer paso es configurar el módulo `locale` con el locale de
-    # la usuaria.
-    # En windows esta configuración no se hace con las variables de entorno.
     locale.setlocale(locale.LC_ALL, '')
-
-    # Establecemos las BBDD de traducciones. En gettext se llaman _dominios_.
-    # Primero calculamos el directorio donde se encuentran.
-    # En un FHS sería `/usr/share/locale`, ...
     LOCALE_DIR = Path(__file__).parent / "locale"
-    # Relacionamos el nombre de las BBDD y el directorio donde buscar.
-    # Las BBDD se llaman igual para todos los idiomas, sólo cambia el
-    # directorio donde están.
     locale.bindtextdomain('HelloWorld', LOCALE_DIR)
     gettext.bindtextdomain('HelloWorld', LOCALE_DIR)
-    # Configuramos el nombre de la BD de traducciones a usar
     gettext.textdomain('HelloWorld')
     
     presenter = Presenter()
     presenter.run()
 
-
-    # Una vez internacionalizado el código, tenemos que hacer las
-    # localizaciones.
-    #
-    # `xgettext -kN_:1,2 helloworld.py` extrae todas las cadenas de
-    # texto del código que necesitan una traducción, incluyendo las
-    # que tienen forma en plural.
-    # Posiblemente tengamos que editar el fichero messages.po para
-    # establecer el CHARSET.
-    #
-    # A continuación la persona encargada realiza las traducciones.
-    # El fichero de traducciones para cada idioma se inicializa:
-    # `$ msginit -i messages.po -l es`
-    # o se actualiza con `msmerge`
-    #
-    # Una vez traducido, hay que crear la BD y copiarla al directorio
-    # correspondiente. P.e.: {LOCALE_DIR}/es/LC_MESSAGES
-    # El fichero con la BD tiene que tener el mismo nombre que usamos
-    # en la configuración de gettext (nombre de dominio)
-    # `msgfmt es.po -o locale/es/LC_MESSAGES/HelloWorld.mo`
-
-    # En Unix la configuración del locale se establece en las
-    # variables de entorno. Ver `locale -a`, y `locale`
-    #
-    # Para probar una localización es suficiente con cambiar esas variables.
-    # P.e.: (según la shell y locale)
-    # `LC_ALL=en_GB.utf8 ./helloworld.py`
