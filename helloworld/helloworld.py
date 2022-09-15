@@ -10,7 +10,8 @@ from typing import Optional
 
 import gi
 gi.require_version('Gtk', '4.0')
-from gi.repository import Gtk
+# Necesitamos una función de GLib (Gtk -> Gdk -> GLib -> GObject)
+from gi.repository import Gtk, GLib
 
 
 _ = gettext.gettext
@@ -96,18 +97,18 @@ class Presenter:
         self._update_count()
         
     def on_say_hello_clicked(self, _w: Gtk.Widget) -> None:
-        # Lanzamos la operación en un thread distinto al _thread principal_
-        # _thread principal_ = thread donde se ejecuta el bucle de eventos
         threading.Thread(target= self.say_hello, daemon= True).start()
-        # El manejador del evento termina inmediatamente, devolviendo
-        # el control al bucle de eventos
 
     def say_hello(self) -> None:
-        # Este método se ejecuta en un thread distinto al principal
         self.state.incr_count()
-        # ¿ Todo ok ? ¿ Es Gtk reentrante ?
-        # concurrencia => error no determinista
-        self._update_count()
+        # Usamos idle_add para solicitar a Gtk que
+        # `self._update_count` se ejecute en el thread principal
+
+        # "Adds a function to be called whenever there are no higher
+        # priority events pending to the default main loop. The
+        # function is given the default idle priority,
+        # G_PRIORITY_DEFAULT_IDLE."
+        GLib.idle_add(self._update_count)
 
     def _update_count(self) -> None:
         self.view.update_count_label(self.state.get_count())
