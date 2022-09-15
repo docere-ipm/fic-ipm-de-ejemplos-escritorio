@@ -42,6 +42,7 @@ class View:
     WINDOW_PADDING: int = 24
 
     label: Gtk.Label = None
+    button: Gtk.Button = None
 
     def build(self, app: Gtk.Application, presenter: Presenter) -> None:
         win = Gtk.ApplicationWindow(
@@ -75,11 +76,15 @@ class View:
         box.append(button)
         button.connect('clicked', presenter.on_say_hello_clicked)
         self.label = label
+        self.button = button
         return box
 
     def update_count_label(self, count: int) -> None:
         self.label.set_label(get_count_text(count))
 
+    def set_say_hello_sensitive(self, value: bool) -> None:
+        self.button.set_sensitive(value)
+        
 
 class Presenter:
     def __init__(self, state: Optional[State]= None):
@@ -97,6 +102,9 @@ class Presenter:
         self._update_count()
         
     def on_say_hello_clicked(self, _w: Gtk.Widget) -> None:
+        # Podemos evitar que se lancen dos acciones simultáneas,
+        # desactivando el botón
+        self.view.set_say_hello_sensitive(False)
         threading.Thread(target= self.say_hello, daemon= True).start()
         # Cuando la usuaria activa el botón
         # Preguntas, problemas, ...:
@@ -107,9 +115,7 @@ class Presenter:
         #
         # - ¿ Si se está ejecutando la acción, ¿ tiene sentido lanzar
         #   otra ?
-        #
-        # - Si no tiene sentido lanzar dos acciones simultáneas, ¿
-        #   cómo lo evitamos ?
+
         #
         # - Si tiene sentido lanzar más de una acción simultánea, ¿
         #   cómo las sincronizamos ?  P.e.: ¿ qué pasa si el click nº5
@@ -123,6 +129,7 @@ class Presenter:
         GLib.idle_add(self._update_count)
 
     def _update_count(self) -> None:
+        self.view.set_say_hello_sensitive(True)
         self.view.update_count_label(self.state.get_count())
 
         
