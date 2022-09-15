@@ -20,11 +20,14 @@ N_ = gettext.ngettext
 class State:
     count: int= 0
 
-    def incr_count(self, step: int= 1) -> None:
+    def incr_count(self, step: int= 1) -> int:
         import time
         time.sleep(3)
-        self.count += step
+        return self.count + step
 
+    def commit(self, state: int) -> None:
+        self.count = state
+        
     def get_count(self) -> int:
         return self.count
 
@@ -43,6 +46,7 @@ class View:
     window: Gtk.ApplicationWindow = None
     label: Gtk.Label = None
     spinner: Gtk.Spinner = None
+    cancel: Gtk.Button = None
     button: Gtk.Button = None
 
     def build(self, app: Gtk.Application, presenter: Presenter) -> None:
@@ -78,8 +82,12 @@ class View:
         )
         spinner = Gtk.Spinner(hexpand= False)
         spinner.hide()
+        cancel = Gtk.Button(label= _("Cancel"), hexpand= False)
+        cancel.hide()
+        cancel.connect('clicked', presenter.on_say_hello_cancelled)
         label_box.append(label)
         label_box.append(spinner)
+        label_box.append(cancel)
         button = Gtk.Button(
             label= _("Say Hello"),
             halign= Gtk.Align.CENTER
@@ -89,6 +97,7 @@ class View:
         button.connect('clicked', presenter.on_say_hello_clicked)
         self.label = label
         self.spinner = spinner
+        self.cancel = cancel
         self.button = button
         return box
 
@@ -99,10 +108,12 @@ class View:
         if showing:
             self.label.set_label("Counting ...")
             self.spinner.show()
+            self.cancel.show()
             self.spinner.start()
         else:
             self.spinner.stop()
             self.spinner.hide()
+            self.cancel.hide()
             
     def info(self, text: str) -> None:
         # Otro concepto importante: _dialogo_
@@ -122,7 +133,7 @@ class Presenter:
         state = state or State()
         self.state = state
         self.view = View()
-        self.saying_hello = False
+        self.saying_hello_thread = None
 
     def run(self) -> None:
         app = Gtk.Application(application_id= "es.udc.fic.ipm.HelloWorld")
@@ -131,20 +142,28 @@ class Presenter:
 
     def on_activate(self, app: Gtk.Application) -> None:
         self.view.build(app, self)
-        self._update_count()
+        self._update_count(self.state.get_count())
         
     def on_say_hello_clicked(self, _w: Gtk.Widget) -> None:
-        if self.saying_hello:
+        # Si la operación tarda mucho tiempo deberíamos dar la opción
+        # de cancelarla. Salvo los casos en que no tiene sentido.
+        #
+        # En la versión anterior no tiene sentido porque una vez
+        # lanzado el thread, es posible que se modifique el estado
+        # aunque lo cancelemos.
+        #
+        # Hemos camiado el api del modelo para que tenga sentido.
+        #
+        # En python no podemos cancelar un thread, así que haremos un
+        # pequeño truco.
+        if self.saying_hello_thread is not None:
             self.view.info(_("I'm already in the process of saying hello"))
         else:
-            self.saying_hello = True
-            # Puesto que la respuesta no es inmediata, le damos feedback a la usuaria
-            # para que sepa que la acción está en curso.
-            # Podemos dar feedback de progresos de varias maneras.
-            # El mejor caso es cuando sabemos lo que falta.
-            # Aquí no lo sabemos, así que optamos por un spinner (ver View).
+            new_thread = threading.Thread(target= self.say_hello, daemon= True)
+            self.saying_hello_thread = new_thread
             self.view.show_saying_indicator(True)
-            threading.Thread(target= self.say_hello, daemon= True).start()
+            new_thread.start()
+
         # Cuando la usuaria activa el botón
         # Preguntas, problemas, ...:
         #
@@ -152,17 +171,27 @@ class Presenter:
         #   cómo las sincronizamos ?  P.e.: ¿ qué pasa si el click nº5
         #   termina antes que el nº4 ?
         #
-        # - La operación tarda mucho tiempo y no se puede
-        #   cancelar. Bad UX.
+
+    def on_say_hello_cancelled(self, _w: Gtk.Widget) -> None:
+        self.saying_hello_thread = None
+        self._update_count(None)
         
     def say_hello(self) -> None:
-        self.state.incr_count()
-        GLib.idle_add(self._update_count)
+        state = self.state.incr_count()
+        GLib.idle_add(self._update_count, state, threading.current_thread())
 
-    def _update_count(self) -> None:
-        self.saying_hello = False
-        self.view.show_saying_indicator(False)
-        self.view.update_count_label(self.state.get_count())
+    def _update_count(
+            self,
+            state: int,
+            from_thread: Optional[threading.Thread]= None
+    ) -> None:
+        if state is not None and self.saying_hello_thread == from_thread:
+            # Thread no cancelado
+            self.state.commit(state)
+            self.saying_hello_thread = None
+        if self.saying_hello_thread is None:
+            self.view.show_saying_indicator(False)
+            self.view.update_count_label(self.state.get_count())
 
         
 if __name__ == '__main__':
