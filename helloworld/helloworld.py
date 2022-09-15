@@ -41,6 +41,7 @@ def get_count_text(count: int) -> str:
 class View:
     WINDOW_PADDING: int = 24
 
+    window: Gtk.ApplicationWindow = None
     label: Gtk.Label = None
     button: Gtk.Button = None
 
@@ -51,6 +52,7 @@ class View:
         app.add_window(win)
         win.connect("destroy", lambda win: win.close())
         win.set_child(self.counter(presenter))
+        self.window = win
         win.present()
 
     def counter(self, presenter: Presenter) -> Gtk.Widget:
@@ -82,15 +84,25 @@ class View:
     def update_count_label(self, count: int) -> None:
         self.label.set_label(get_count_text(count))
 
-    def set_say_hello_sensitive(self, value: bool) -> None:
-        self.button.set_sensitive(value)
-        
+    def info(self, text: str) -> None:
+        # Otro concepto importante: _dialogo_
+        dialog = Gtk.MessageDialog(
+            transient_for= self.window,
+            modal= True,
+            message_type= Gtk.MessageType.INFO,
+            buttons= Gtk.ButtonsType.OK,
+            text= text,
+        )
+        dialog.connect('response', lambda d, _: d.destroy())
+        dialog.show()
+
 
 class Presenter:
     def __init__(self, state: Optional[State]= None):
         state = state or State()
         self.state = state
         self.view = View()
+        self.saying_hello = False
 
     def run(self) -> None:
         app = Gtk.Application(application_id= "es.udc.fic.ipm.HelloWorld")
@@ -102,10 +114,19 @@ class Presenter:
         self._update_count()
         
     def on_say_hello_clicked(self, _w: Gtk.Widget) -> None:
-        # Podemos evitar que se lancen dos acciones simultáneas,
-        # desactivando el botón
-        self.view.set_say_hello_sensitive(False)
-        threading.Thread(target= self.say_hello, daemon= True).start()
+        # Hay teorías a favor y en contrar de deshabilitar widget de
+        # la interface.
+        
+        # Podemos evitar que se lancen dos acciones simultáneas
+        # controlandolo con un flag e informando a la usuaria cuando
+        # no se puede voler a lanzar.
+        if self.saying_hello:
+            # :note: No queremos interacturar directamente con los
+            # objetos internos de la vista
+            self.view.info(_("I'm already in the process of saying hello"))
+        else:
+            self.saying_hello = True
+            threading.Thread(target= self.say_hello, daemon= True).start()
         # Cuando la usuaria activa el botón
         # Preguntas, problemas, ...:
         #
@@ -129,7 +150,9 @@ class Presenter:
         GLib.idle_add(self._update_count)
 
     def _update_count(self) -> None:
-        self.view.set_say_hello_sensitive(True)
+        # Siempre modificamos esta variable en el thread principal
+        # y evitamos problemas de sección crítica.
+        self.saying_hello = False
         self.view.update_count_label(self.state.get_count())
 
         
