@@ -30,6 +30,8 @@ class State:
     count: int= 0
 
     def incr_count(self, step: int= 1) -> None:
+        import time
+        time.sleep(10)
         self.count += step
 
     def get_count(self) -> int:
