@@ -98,16 +98,28 @@ class Presenter:
         
     def on_say_hello_clicked(self, _w: Gtk.Widget) -> None:
         threading.Thread(target= self.say_hello, daemon= True).start()
-
+        # Cuando la usuaria activa el botón
+        # Preguntas, problemas, ...:
+        #
+        # - El botón lanza una acción, una acción requiere una
+        #   respuesta/resultado, pero durante varios segundos no
+        #   ocurre nada. Bad UX.
+        #
+        # - ¿ Si se está ejecutando la acción, ¿ tiene sentido lanzar
+        #   otra ?
+        #
+        # - Si no tiene sentido lanzar dos acciones simultáneas, ¿
+        #   cómo lo evitamos ?
+        #
+        # - Si tiene sentido lanzar más de una acción simultánea, ¿
+        #   cómo las sincronizamos ?  P.e.: ¿ qué pasa si el click nº5
+        #   termina antes que el nº4 ?
+        #
+        # - La operación tarda mucho tiempo y no se puede
+        #   cancelar. Bad UX.
+        
     def say_hello(self) -> None:
         self.state.incr_count()
-        # Usamos idle_add para solicitar a Gtk que
-        # `self._update_count` se ejecute en el thread principal
-
-        # "Adds a function to be called whenever there are no higher
-        # priority events pending to the default main loop. The
-        # function is given the default idle priority,
-        # G_PRIORITY_DEFAULT_IDLE."
         GLib.idle_add(self._update_count)
 
     def _update_count(self) -> None:
