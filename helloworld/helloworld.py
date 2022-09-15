@@ -10,7 +10,6 @@ from typing import Optional
 
 import gi
 gi.require_version('Gtk', '4.0')
-# Necesitamos una función de GLib (Gtk -> Gdk -> GLib -> GObject)
 from gi.repository import Gtk, GLib
 
 
@@ -43,6 +42,7 @@ class View:
 
     window: Gtk.ApplicationWindow = None
     label: Gtk.Label = None
+    spinner: Gtk.Spinner = None
     button: Gtk.Button = None
 
     def build(self, app: Gtk.Application, presenter: Presenter) -> None:
@@ -65,25 +65,45 @@ class View:
             margin_bottom= View.WINDOW_PADDING,
             margin_start= View.WINDOW_PADDING
         )
+        label_box = Gtk.Box(
+            orientation= Gtk.Orientation.HORIZONTAL,
+            homogeneous= False,
+            spacing= 8,
+            vexpand= True
+        )
         label = Gtk.Label(
             label= "",
             halign= Gtk.Align.CENTER,
-            vexpand= True
+            hexpand= True
         )
+        spinner = Gtk.Spinner(hexpand= False)
+        spinner.hide()
+        label_box.append(label)
+        label_box.append(spinner)
         button = Gtk.Button(
             label= _("Say Hello"),
             halign= Gtk.Align.CENTER
         )
-        box.append(label)
+        box.append(label_box)
         box.append(button)
         button.connect('clicked', presenter.on_say_hello_clicked)
         self.label = label
+        self.spinner = spinner
         self.button = button
         return box
 
     def update_count_label(self, count: int) -> None:
         self.label.set_label(get_count_text(count))
 
+    def show_saying_indicator(self, showing: bool) -> None:
+        if showing:
+            self.label.set_label("Counting ...")
+            self.spinner.show()
+            self.spinner.start()
+        else:
+            self.spinner.stop()
+            self.spinner.hide()
+            
     def info(self, text: str) -> None:
         # Otro concepto importante: _dialogo_
         dialog = Gtk.MessageDialog(
@@ -114,29 +134,19 @@ class Presenter:
         self._update_count()
         
     def on_say_hello_clicked(self, _w: Gtk.Widget) -> None:
-        # Hay teorías a favor y en contrar de deshabilitar widget de
-        # la interface.
-        
-        # Podemos evitar que se lancen dos acciones simultáneas
-        # controlandolo con un flag e informando a la usuaria cuando
-        # no se puede voler a lanzar.
         if self.saying_hello:
-            # :note: No queremos interacturar directamente con los
-            # objetos internos de la vista
             self.view.info(_("I'm already in the process of saying hello"))
         else:
             self.saying_hello = True
+            # Puesto que la respuesta no es inmediata, le damos feedback a la usuaria
+            # para que sepa que la acción está en curso.
+            # Podemos dar feedback de progresos de varias maneras.
+            # El mejor caso es cuando sabemos lo que falta.
+            # Aquí no lo sabemos, así que optamos por un spinner (ver View).
+            self.view.show_saying_indicator(True)
             threading.Thread(target= self.say_hello, daemon= True).start()
         # Cuando la usuaria activa el botón
         # Preguntas, problemas, ...:
-        #
-        # - El botón lanza una acción, una acción requiere una
-        #   respuesta/resultado, pero durante varios segundos no
-        #   ocurre nada. Bad UX.
-        #
-        # - ¿ Si se está ejecutando la acción, ¿ tiene sentido lanzar
-        #   otra ?
-
         #
         # - Si tiene sentido lanzar más de una acción simultánea, ¿
         #   cómo las sincronizamos ?  P.e.: ¿ qué pasa si el click nº5
@@ -150,9 +160,8 @@ class Presenter:
         GLib.idle_add(self._update_count)
 
     def _update_count(self) -> None:
-        # Siempre modificamos esta variable en el thread principal
-        # y evitamos problemas de sección crítica.
         self.saying_hello = False
+        self.view.show_saying_indicator(False)
         self.view.update_count_label(self.state.get_count())
 
         
