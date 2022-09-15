@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 
 from __future__ import annotations
-from typing import Optional
-
-
-# Vamos a internacionalizar la apliación añadiendo el soporte para
-# texto en distintos idiomas usando `gettext`.
-
-# Para el texto internacionalizado necesitamos la librería de soporte
-# de locales y gettext.
-import locale
 import gettext
+import locale
 from pathlib import Path
+import threading
+from typing import Optional
 
 
 import gi
@@ -28,7 +22,7 @@ class State:
 
     def incr_count(self, step: int= 1) -> None:
         import time
-        time.sleep(10)
+        time.sleep(3)
         self.count += step
 
     def get_count(self) -> int:
@@ -102,9 +96,17 @@ class Presenter:
         self._update_count()
         
     def on_say_hello_clicked(self, _w: Gtk.Widget) -> None:
-        # Esta operación va a tardar mucho y nos deja bloqueada la interface
-        # ¿ Solución ?
+        # Lanzamos la operación en un thread distinto al _thread principal_
+        # _thread principal_ = thread donde se ejecuta el bucle de eventos
+        threading.Thread(target= self.say_hello, daemon= True).start()
+        # El manejador del evento termina inmediatamente, devolviendo
+        # el control al bucle de eventos
+
+    def say_hello(self) -> None:
+        # Este método se ejecuta en un thread distinto al principal
         self.state.incr_count()
+        # ¿ Todo ok ? ¿ Es Gtk reentrante ?
+        # concurrencia => error no determinista
         self._update_count()
 
     def _update_count(self) -> None:
