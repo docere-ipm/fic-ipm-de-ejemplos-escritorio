@@ -116,7 +116,6 @@ class View:
             self.cancel.hide()
             
     def info(self, text: str) -> None:
-        # Otro concepto importante: _dialogo_
         dialog = Gtk.MessageDialog(
             transient_for= self.window,
             modal= True,
@@ -142,24 +141,21 @@ class Presenter:
 
     def on_activate(self, app: Gtk.Application) -> None:
         self.view.build(app, self)
-        self._update_count(self.state.get_count())
+        self._update_count(None)
         
     def on_say_hello_clicked(self, _w: Gtk.Widget) -> None:
-        # Si la operación tarda mucho tiempo deberíamos dar la opción
-        # de cancelarla. Salvo los casos en que no tiene sentido.
-        #
-        # En la versión anterior no tiene sentido porque una vez
-        # lanzado el thread, es posible que se modifique el estado
-        # aunque lo cancelemos.
-        #
-        # Hemos camiado el api del modelo para que tenga sentido.
-        #
-        # En python no podemos cancelar un thread, así que haremos un
-        # pequeño truco.
+        # Aprovechamos para organizar el código de otra manera
+        def say_hello() -> None:
+            state = self.state.incr_count()
+            GLib.idle_add(self._update_count, state, threading.current_thread())
+            # En python la creación de _closures_ tienen limitaciones,
+            # pero aquí prodríamos usarlos:
+            # GLib.idle_add(lambda: self._update_count(state, threading.current_thread())
+
         if self.saying_hello_thread is not None:
             self.view.info(_("I'm already in the process of saying hello"))
         else:
-            new_thread = threading.Thread(target= self.say_hello, daemon= True)
+            new_thread = threading.Thread(target= say_hello, daemon= True)
             self.saying_hello_thread = new_thread
             self.view.show_saying_indicator(True)
             new_thread.start()
@@ -167,6 +163,8 @@ class Presenter:
         # Cuando la usuaria activa el botón
         # Preguntas, problemas, ...:
         #
+        # En este ejemplo, ésto no tiene sentido.
+        # Queda como ejercicio.
         # - Si tiene sentido lanzar más de una acción simultánea, ¿
         #   cómo las sincronizamos ?  P.e.: ¿ qué pasa si el click nº5
         #   termina antes que el nº4 ?
@@ -176,17 +174,13 @@ class Presenter:
         self.saying_hello_thread = None
         self._update_count(None)
         
-    def say_hello(self) -> None:
-        state = self.state.incr_count()
-        GLib.idle_add(self._update_count, state, threading.current_thread())
-
     def _update_count(
             self,
-            state: int,
+            state: Optional[int], # None significa no hay estado nuevo, usar el actual
             from_thread: Optional[threading.Thread]= None
     ) -> None:
         if state is not None and self.saying_hello_thread == from_thread:
-            # Thread no cancelado
+            # Si hay estado nuevo y no se cancelo el Thread
             self.state.commit(state)
             self.saying_hello_thread = None
         if self.saying_hello_thread is None:
