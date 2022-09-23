@@ -41,6 +41,8 @@ def get_count_text(count: int) -> str:
 
 
 class View:
+    idle_add = GLib.idle_add
+    
     WINDOW_PADDING: int = 24
 
     window: Gtk.ApplicationWindow = None
@@ -147,10 +149,10 @@ class Presenter:
         # Aprovechamos para organizar el código de otra manera
         def say_hello() -> None:
             state = self.state.incr_count()
-            GLib.idle_add(self._update_count, state, threading.current_thread())
+            View.idle_add(self._update_count, state, threading.current_thread())
             # En python la creación de _closures_ tienen limitaciones,
             # pero aquí prodríamos usarlos:
-            # GLib.idle_add(lambda: self._update_count(state, threading.current_thread())
+            # View.idle_add(lambda: self._update_count(state, threading.current_thread())
 
         if self.saying_hello_thread is not None:
             self.view.info(_("I'm already in the process of saying hello"))
