@@ -1,0 +1,62 @@
+from __future__ import annotations
+
+import datetime
+from enum import Enum, auto
+import time
+from typing import Iterator, NamedTuple, Optional
+import random
+
+
+class FlightBookerData(NamedTuple):
+    one_way: bool = True
+    start_date: Optional[datetime.datetime] = None
+    return_date: Optional[datetime.datetime] = None
+
+    def update_one_way(self, one_way: bool) -> FlightBookerData:
+        return self._replace(one_way= one_way)
+    
+    def update_start_date(self, start_date: datetime.datetime) -> FlightBookerData:
+        return self._replace(start_date= start_date)
+
+    def update_return_date(self, return_date: datetime.datetime) -> FlightBookerData:
+        return self._replace(return_date= return_date)
+
+    def is_valid(self) -> bool:
+        return (
+            (
+                self.one_way and
+                self.start_date is not None
+            ) or
+            (
+                not self.one_way and
+                self.start_date is not None and
+                self.return_date is not None and
+                self.return_date >= self.start_date
+            )
+        )
+
+    
+class FlightBookerProgress(Enum):
+    CONTACTING_SERVER = auto()
+    SENDING_DATA = auto()
+    WAITING_ANSWER = auto()
+    
+    
+class FlightBookerModel:
+    n_progress_steps = 3
+
+    def build_data(self) -> FlightBookerData:
+        return FlightBookerData()
+    
+    def do_book(self, booking_data: FlightBookerData) -> Iterator[FlightBookerProgress]:
+        if not booking_data.is_valid():
+            raise ValueError(f"Invalid {booking_data=}")
+        yield FlightBookerProgress.CONTACTING_SERVER
+        time.sleep(random.uniform(0, 1))
+        yield FlightBookerProgress.SENDING_DATA
+        time.sleep(random.uniform(0, 1))
+        yield FlightBookerProgress.WAITING_ANSWER
+        time.sleep(random.uniform(0, 2))
+        ok = random.choice([True, False])
+        if not ok:
+            raise IOError("The server rejected the booking request")
