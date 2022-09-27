@@ -10,6 +10,9 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk, GLib
 
 
+from date_utils import date_sample, show_date
+
+
 _ = gettext.gettext
 N_ = gettext.ngettext
 
@@ -56,6 +59,7 @@ class FlightBookerView:
         self.build(app)
         self.handler.on_built(self)
 
+    # A cada entrada del formulario le añadimos la etiqueta correspondiente
     def build(self, app: Gtk.Application) -> None:
         self.window = win = Gtk.ApplicationWindow(
             title= _("Flight Booker"),
@@ -75,7 +79,11 @@ class FlightBookerView:
         box.append(self.flight_type_input())
         box.append(self.start_date_input())
         box.append(self.return_date_input())
-        box.append(book_button := Gtk.Button(label= _("Book")))
+        box.append(book_button := Gtk.Button(
+            label= _("Book"),
+            hexpand= False,
+            halign= Gtk.Align.CENTER)
+        )
         self.book_button = book_button
         book_button.connect('clicked', lambda _wg: self.handler.on_book_clicked())
 
@@ -89,7 +97,10 @@ class FlightBookerView:
         self.flight_type = flight_type = Gtk.ComboBox(
             model=flight_type_store,
             entry_text_column= 0,
-            active= 0)
+            active= 0,
+            hexpand= False,
+            halign= Gtk.Align.START
+        )
         renderer_text = Gtk.CellRendererText()
         flight_type.pack_start(renderer_text, True)
         flight_type.add_attribute(renderer_text, "text", 0)
@@ -97,23 +108,81 @@ class FlightBookerView:
             'changed',
             lambda wg: self.handler.on_flight_type_changed(one_way= wg.get_active() == 0)
         )
-        return flight_type
+        box = Gtk.Box(
+            orientation= Gtk.Orientation.HORIZONTAL,
+            homogeneous= False,
+            spacing= 10,
+            hexpand= True
+        )
+        box.append(
+            Gtk.Label(
+                label= _("Flight type:"),
+                hexpand= True,
+                halign= Gtk.Align.START
+            )
+        )
+        box.append(flight_type)
+        return box
 
     def start_date_input(self) -> Gtk.Widget:
-        self.start_date_entry = start_date_entry = Gtk.Entry(text= "")
+        box = Gtk.Box(
+            orientation= Gtk.Orientation.HORIZONTAL,
+            homogeneous= False,
+            spacing= 10,
+            hexpand= True
+        )
+        box.append(
+            Gtk.Label(
+                label= _("Start date:"),
+                hexpand= True,
+                halign= Gtk.Align.START
+            )
+        )
+        box.append(
+            start_date_entry := Gtk.Entry(
+                text= "",
+                hexpand= False,
+                halign= Gtk.Align.END
+            )
+        )
+        # Ademas de las etiquetas, en los entries añadimos un
+        # placeholder con un ejemplo de formato
+        start_date_entry.set_placeholder_text(_("Example: {}").format(show_date(date_sample)))
         start_date_entry.connect(
             'changed',
             lambda wg: self.handler.on_start_date_changed(text= wg.get_text())
         )
-        return start_date_entry
+        self.start_date_entry = start_date_entry
+        return box
     
     def return_date_input(self) -> Gtk.Widget:
-        self.return_date_entry = return_date_entry = Gtk.Entry(text= "")
+        box = Gtk.Box(
+            orientation= Gtk.Orientation.HORIZONTAL,
+            homogeneous= False,
+            spacing= 10,
+            hexpand= True
+        )
+        box.append(
+            Gtk.Label(
+                label= _("Return date:"),
+                hexpand= True,
+                halign= Gtk.Align.START
+            )
+        )
+        box.append(
+            return_date_entry := Gtk.Entry(
+                text= "",
+                hexpand= False,
+                halign= Gtk.Align.END
+            )
+        )
+        return_date_entry.set_placeholder_text(_("Example: {}").format(show_date(date_sample)))
         return_date_entry.connect(
             'changed',
             lambda wg: self.handler.on_return_date_changed(text= wg.get_text())
         )
-        return return_date_entry
+        self.return_date_entry = return_date_entry 
+        return box
 
     def update(
             self,
@@ -146,6 +215,9 @@ class FlightBookerView:
         dialog.connect('response', lambda d, _: d.destroy())
         dialog.show()
 
+    def show_success(self) -> None:
+        self.show_info(_("Booking sucessfull"))
+        
     def show_book_dialog(self) -> Gtk.Dialog:
         def on_response(dialog: Gtk.Dialog, _response: int) -> None:
             dialog.destroy()

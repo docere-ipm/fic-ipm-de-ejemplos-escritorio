@@ -10,13 +10,8 @@ from models import FlightBookerModel
 from views import FlightBookerView, run, run_on_main_thread
 
 
-def parse_date(text: str) -> Optional[datetime.datetime]:
-    try:
-        # i18n: el formato de fecha es el que marca el locale
-        return datetime.datetime.strptime(text, "%x")
-    except ValueError:
-        return None
-    
+from date_utils import parse_date
+
 
 class FlightBookerPresenter:
     def __init__(
@@ -78,7 +73,7 @@ class FlightBookerPresenter:
         def do_book_continuation(error: Optional[str]= None) -> None:
             self.view.destroy_dialog(dialog)
             if error is None:
-                self.view.show_info(_("Booking sucessfull"))
+                self.view.show_success()
             else:
                 self.view.show_error(error)
             
