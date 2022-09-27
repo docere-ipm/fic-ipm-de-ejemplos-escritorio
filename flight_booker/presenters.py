@@ -84,7 +84,27 @@ class FlightBookerPresenter:
         self.book_cancelled = True
         
     def _update_view(self) -> None:
+        # Este planteamiento tiene sus problemas.
+        
+        # Estamos marcando como erroneo la fecha de vuelta si es
+        # anterior a la fecha de salida aunque el formato sea una
+        # fecha válida
+        
+        if self.data.is_valid():
+            book_enabled = True
+            start_date_error = False
+            return_date_error = self.data.return_date is None
+        else:
+            if self.data.start_date is not None:
+                start_date_error = False
+                return_date_error = True
+            else:
+                start_date_error = True
+                return_date_error = self.data.return_date is not None
+            book_enabled = False
         self.view.update(
+            start_date_error= start_date_error,
+            return_date_error= return_date_error,
             return_date_enabled= not self.data.one_way,
-            book_enabled= self.data.is_valid(),
+            book_enabled= book_enabled,
         )

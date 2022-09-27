@@ -184,11 +184,26 @@ class FlightBookerView:
         self.return_date_entry = return_date_entry 
         return box
 
+    def _toogle_class(self, widget: Gtk.Widget, class_name: str, value: bool) -> None:
+        if value:
+            widget.get_style_context().remove_class(class_name)
+        else:
+            widget.get_style_context().add_class(class_name)
+                
     def update(
             self,
+            start_date_error: bool,
+            return_date_error: bool,
             return_date_enabled: bool,
             book_enabled: bool
     ) -> None:
+        # :IMPORTANTE: Para marcar un error no podemos cambiar
+        # directamente el aspecto del Entry. Tenemos que hacerlo según
+        # la configuración del theme de la usuaria. Por eso
+        # añadimos/quitamos la clase 'error' y que se encarge la
+        # librería.
+        self._toogle_class(self.start_date_entry, 'error', not start_date_error)
+        self._toogle_class(self.return_date_entry, 'error', not return_date_error)
         self.return_date_entry.set_sensitive(return_date_enabled)
         self.book_button.set_sensitive(book_enabled)
 
