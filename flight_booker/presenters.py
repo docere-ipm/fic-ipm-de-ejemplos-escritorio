@@ -59,13 +59,25 @@ class FlightBookerPresenter:
                         # booking en el servidor
                         break
                     if step == FlightBookerProgress.CONTACTING_SERVER:
-                        dialog.update_progress(UIText.CONTACTING_SERVER.value)    
+                        run_on_main_thread(
+                            dialog.update_progress,
+                            UIText.CONTACTING_SERVER.value
+                        )
                     elif step ==  FlightBookerProgress.SENDING_DATA:
-                        dialog.update_progress(UIText.SENDING_DATA.value)
+                        run_on_main_thread(
+                            dialog.update_progress,
+                            UIText.SENDING_DATA.value
+                        )
                     elif step == FlightBookerProgress.WAITING_ANSWER:
-                        dialog.update_progress(UIText.WAITING_ANSWER.value)
+                        run_on_main_thread(
+                            dialog.update_progress,
+                            UIText.WAITING_ANSWER.value
+                        )
                     else:
-                        dialog.update_progress(str(step))
+                        run_on_main_thread(
+                            dialog.update_progress,
+                            str(step)
+                        )
                 else:
                     run_on_main_thread(do_book_continuation)
             except IOError as e:
