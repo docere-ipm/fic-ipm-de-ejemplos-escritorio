@@ -19,6 +19,7 @@ N_ = gettext.ngettext
 
 
 class UIText(Enum):
+    BOOKING = _("Booking ...")
     BOOK_SUCCESS = _("Sucessfully booked")
     CONTACTING_SERVER = _("Contacting server ...")
     SENDING_DATA = _("Sending booking data ...")
@@ -215,28 +216,32 @@ class FlightBookerView:
         dialog.connect('response', lambda d, _: d.destroy())
         dialog.show()
 
-    def show_book_dialog(self) -> Gtk.Dialog:
-        def on_response(dialog: Gtk.Dialog, _response: int) -> None:
-            dialog.destroy()
-            self.handler.on_book_cancelled()
-            
+    def progress_dialog(self, title: str) -> FlightBookerProgressDialog:
         dialog = Gtk.MessageDialog(
             transient_for= self.window,
             modal= True,
-            message_type= Gtk.MessageType.ERROR,
+            message_type= Gtk.MessageType.INFO,
             buttons= Gtk.ButtonsType.CLOSE,
-            text= "Booking ...",
+            text= title,
             secondary_text= ""
         )
+        return FlightBookerProgressDialog(dialog, self.handler)
+
+
+class FlightBookerProgressDialog:
+    def __init__(self, dialog: Gtk.Dialog, handler: FlightBookerViewHandler):
+        def on_response(dialog: Gtk.Dialog, _response: int) -> None:
+            self.dialog.destroy()
+            self.handler.on_book_cancelled()
+
         dialog.get_message_area().append(spinner := Gtk.Spinner())
         spinner.start()
         dialog.connect('response', on_response)
         dialog.show()
-        return dialog
+        self.dialog = dialog
 
-    def update_dialog(self, dialog: Gtk.Dialog, text: str) -> None:
-        dialog.set_property('secondary-text', text)
+    def update_progress(self, text: str) -> None:
+        self.dialog.set_property('secondary-text', text)
         
-    def destroy_dialog(self, dialog: Gtk.Dialog) -> None:
-        # No nos interesa que el Presenter haga ninguna llamada a Gtk.
-        dialog.destroy()
+    def destroy(self) -> None:
+        self.dialog.destroy()

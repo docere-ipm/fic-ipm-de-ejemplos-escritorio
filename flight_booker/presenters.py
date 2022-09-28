@@ -47,7 +47,7 @@ class FlightBookerPresenter:
         self._update_view()
     
     def on_book_clicked(self) -> None:
-        dialog = self.view.show_book_dialog()
+        dialog = self.view.progress_dialog(UIText.BOOKING.value)
 
         def do_book() -> None:
             generator = self.model.do_book(self.data)
@@ -59,13 +59,13 @@ class FlightBookerPresenter:
                         # booking en el servidor
                         break
                     if step == FlightBookerProgress.CONTACTING_SERVER:
-                        self.view.update_dialog(dialog, UIText.CONTACTING_SERVER.value)    
+                        dialog.update_progress(UIText.CONTACTING_SERVER.value)    
                     elif step ==  FlightBookerProgress.SENDING_DATA:
-                        self.view.update_dialog(dialog, UIText.SENDING_DATA.value)
+                        dialog.update_progress(UIText.SENDING_DATA.value)
                     elif step == FlightBookerProgress.WAITING_ANSWER:
-                        self.view.update_dialog(dialog, UIText.WAITING_ANSWER.value)
+                        dialog.update_progress(UIText.WAITING_ANSWER.value)
                     else:
-                        self.view.update_dialog(dialog, str(step))
+                        dialog.update_progress(str(step))
                 else:
                     run_on_main_thread(do_book_continuation)
             except IOError as e:
@@ -73,7 +73,7 @@ class FlightBookerPresenter:
                 run_on_main_thread(do_book_continuation, text)
 
         def do_book_continuation(error: Optional[str]= None) -> None:
-            self.view.destroy_dialog(dialog)
+            dialog.destroy()
             if error is None:
                 self.view.show_info(UIText.BOOK_SUCCESS.value)
             else:
