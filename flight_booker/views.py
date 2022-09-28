@@ -24,7 +24,7 @@ def run(application_id: str, on_activate: Callable) -> None:
 
     
 run_on_main_thread = GLib.idle_add
-# En este ejemplo si falla si usamos Gtk desde un thread auxiliar
+# En este ejemplo sí falla si usamos Gtk desde un thread auxiliar
 # run_on_main_thread = lambda f, *args: f(*args)
 
 
@@ -41,9 +41,6 @@ WINDOW_PADDING = 20
 
 
 class FlightBookerView:
-    # Estas variables realmente no se llegan a usar nunca, porque lo
-    # primero que hacemos es escribirlas. Pero así simulamos que las
-    # hemos declarado.
     window: Gtk.ApplicationWindow = None
     flight_type: Gtk.ComboBox = None
     start_date_entry: Gtk.Entry = None
@@ -59,7 +56,6 @@ class FlightBookerView:
         self.build(app)
         self.handler.on_built(self)
 
-    # A cada entrada del formulario le añadimos la etiqueta correspondiente
     def build(self, app: Gtk.Application) -> None:
         self.window = win = Gtk.ApplicationWindow(
             title= _("Flight Booker"),
@@ -124,7 +120,11 @@ class FlightBookerView:
         box.append(flight_type)
         return box
 
-    def start_date_input(self) -> Gtk.Widget:
+    def _date_input(
+            self,
+            label: str,
+            handler: Callable[[Gtk.Widget], None]
+    ) -> tuple[Gtk.Widget, Gtk.Widget]:
         box = Gtk.Box(
             orientation= Gtk.Orientation.HORIZONTAL,
             homogeneous= False,
@@ -132,56 +132,33 @@ class FlightBookerView:
             hexpand= True
         )
         box.append(
-            Gtk.Label(
-                label= _("Start date:"),
-                hexpand= True,
-                halign= Gtk.Align.START
-            )
+            Gtk.Label(label= label, hexpand= True, halign= Gtk.Align.START)
         )
         box.append(
-            start_date_entry := Gtk.Entry(
+            entry := Gtk.Entry(
                 text= "",
                 hexpand= False,
                 halign= Gtk.Align.END
             )
         )
-        # Ademas de las etiquetas, en los entries añadimos un
-        # placeholder con un ejemplo de formato
-        start_date_entry.set_placeholder_text(_("Example: {}").format(show_date(date_sample)))
-        start_date_entry.connect(
-            'changed',
+        entry.set_placeholder_text(_("Example: {}").format(show_date(date_sample)))
+        entry.connect('changed', handler)
+        return box, entry
+
+    def start_date_input(self) -> Gtk.Widget:
+        box, entry = self._date_input(
+            _("Start date:"),
             lambda wg: self.handler.on_start_date_changed(text= wg.get_text())
         )
-        self.start_date_entry = start_date_entry
+        self.start_date_entry = entry
         return box
     
     def return_date_input(self) -> Gtk.Widget:
-        box = Gtk.Box(
-            orientation= Gtk.Orientation.HORIZONTAL,
-            homogeneous= False,
-            spacing= 10,
-            hexpand= True
-        )
-        box.append(
-            Gtk.Label(
-                label= _("Return date:"),
-                hexpand= True,
-                halign= Gtk.Align.START
-            )
-        )
-        box.append(
-            return_date_entry := Gtk.Entry(
-                text= "",
-                hexpand= False,
-                halign= Gtk.Align.END
-            )
-        )
-        return_date_entry.set_placeholder_text(_("Example: {}").format(show_date(date_sample)))
-        return_date_entry.connect(
-            'changed',
+        box, entry = self._date_input(
+            _("Return date:"),
             lambda wg: self.handler.on_return_date_changed(text= wg.get_text())
         )
-        self.return_date_entry = return_date_entry 
+        self.return_date_entry = entry
         return box
 
     def _toogle_class(self, widget: Gtk.Widget, class_name: str, value: bool) -> None:
