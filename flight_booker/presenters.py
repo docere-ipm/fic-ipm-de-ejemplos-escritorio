@@ -6,7 +6,7 @@ import threading
 from typing import Optional
 
 
-from models import FlightBookerModel
+from models import FlightBookerModel, FlightBookerProgress
 from views import FlightBookerView, UIText, run, run_on_main_thread
 
 
@@ -58,7 +58,14 @@ class FlightBookerPresenter:
                         # Queda sin resolver cómo cancelamos el
                         # booking en el servidor
                         break
-                    # TODO: Ejercicio: mostrar info de los steps
+                    if step == FlightBookerProgress.CONTACTING_SERVER:
+                        self.view.update_dialog(dialog, UIText.CONTACTING_SERVER.value)    
+                    elif step ==  FlightBookerProgress.SENDING_DATA:
+                        self.view.update_dialog(dialog, UIText.SENDING_DATA.value)
+                    elif step == FlightBookerProgress.WAITING_ANSWER:
+                        self.view.update_dialog(dialog, UIText.WAITING_ANSWER.value)
+                    else:
+                        self.view.update_dialog(dialog, str(step))
                 else:
                     run_on_main_thread(do_book_continuation)
             except IOError as e:

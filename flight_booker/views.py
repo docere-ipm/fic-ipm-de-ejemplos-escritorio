@@ -20,6 +20,9 @@ N_ = gettext.ngettext
 
 class UIText(Enum):
     BOOK_SUCCESS = _("Sucessfully booked")
+    CONTACTING_SERVER = _("Contacting server ...")
+    SENDING_DATA = _("Sending booking data ...")
+    WAITING_ANSWER = _("Waiting for server's response ...")
     
 
 def run(application_id: str, on_activate: Callable) -> None:
@@ -223,15 +226,17 @@ class FlightBookerView:
             message_type= Gtk.MessageType.ERROR,
             buttons= Gtk.ButtonsType.CLOSE,
             text= "Booking ...",
+            secondary_text= ""
         )
-        box = dialog.get_child()
-        label = box.get_first_child()
-        box.insert_child_after(spinner := Gtk.Spinner(), label)
+        dialog.get_message_area().append(spinner := Gtk.Spinner())
         spinner.start()
         dialog.connect('response', on_response)
         dialog.show()
         return dialog
 
+    def update_dialog(self, dialog: Gtk.Dialog, text: str) -> None:
+        dialog.set_property('secondary-text', text)
+        
     def destroy_dialog(self, dialog: Gtk.Dialog) -> None:
         # No nos interesa que el Presenter haga ninguna llamada a Gtk.
         dialog.destroy()
