@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 
+from enum import Enum
 import gettext
 from typing import Callable, Protocol
 
@@ -16,6 +17,10 @@ from date_utils import date_sample, show_date
 _ = gettext.gettext
 N_ = gettext.ngettext
 
+
+class UIText(Enum):
+    BOOK_SUCCESS = _("Sucessfully booked")
+    
 
 def run(application_id: str, on_activate: Callable) -> None:
     app = Gtk.Application(application_id= application_id)
@@ -207,9 +212,6 @@ class FlightBookerView:
         dialog.connect('response', lambda d, _: d.destroy())
         dialog.show()
 
-    def show_success(self) -> None:
-        self.show_info(_("Booking sucessfull"))
-        
     def show_book_dialog(self) -> Gtk.Dialog:
         def on_response(dialog: Gtk.Dialog, _response: int) -> None:
             dialog.destroy()

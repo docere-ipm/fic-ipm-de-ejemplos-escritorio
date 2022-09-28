@@ -7,7 +7,7 @@ from typing import Optional
 
 
 from models import FlightBookerModel
-from views import FlightBookerView, run, run_on_main_thread
+from views import FlightBookerView, UIText, run, run_on_main_thread
 
 
 from date_utils import parse_date
@@ -21,7 +21,6 @@ class FlightBookerPresenter:
     ) -> None:
         self.model = model or FlightBookerModel()
         self.view = view or FlightBookerView()
-        # Este `data` forma parte del estado del presenter/view
         self.data = self.model.build_data()
 
     def run(self, application_id: str) -> None:
@@ -36,10 +35,6 @@ class FlightBookerPresenter:
         self._update_view()
     
     def on_start_date_changed(self, text: str) -> None:
-        # Importante: eliminar espacios antes y después.
-        
-        # En la interface son invisibles, pero hacen que falle el
-        # parsing de las fechas.
         text = text.strip()
         date = parse_date(text)
         self.data = self.data.update_start_date(date)
@@ -73,7 +68,7 @@ class FlightBookerPresenter:
         def do_book_continuation(error: Optional[str]= None) -> None:
             self.view.destroy_dialog(dialog)
             if error is None:
-                self.view.show_success()
+                self.view.show_info(UIText.BOOK_SUCCESS.value)
             else:
                 self.view.show_error(error)
             
