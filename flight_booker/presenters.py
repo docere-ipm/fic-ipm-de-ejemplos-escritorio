@@ -31,19 +31,19 @@ class FlightBookerPresenter:
         self._update_view()
     
     def on_flight_type_changed(self, one_way: bool) -> None:
-        self.data = self.data.update_one_way(one_way)
+        self.data = self.data._replace(one_way= one_way)
         self._update_view()
     
     def on_start_date_changed(self, text: str) -> None:
         text = text.strip()
         date = parse_date(text)
-        self.data = self.data.update_start_date(date)
+        self.data = self.data._replace(start_date= date)
         self._update_view()
                 
     def on_return_date_changed(self, text: str) -> None:
         text = text.strip()
         date = parse_date(text)
-        self.data = self.data.update_return_date(date)
+        self.data = self.data._replace(return_date= date)
         self._update_view()
     
     def on_book_clicked(self) -> None:
@@ -85,7 +85,7 @@ class FlightBookerPresenter:
         # anterior a la fecha de salida aunque el formato sea una
         # fecha válida
         
-        if self.data.is_valid():
+        if self.model.is_valid(self.data):
             book_enabled = True
             start_date_error = False
             return_date_error = self.data.return_date is None

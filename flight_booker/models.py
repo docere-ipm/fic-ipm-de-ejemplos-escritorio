@@ -12,29 +12,6 @@ class FlightBookerData(NamedTuple):
     start_date: Optional[datetime.datetime] = None
     return_date: Optional[datetime.datetime] = None
 
-    def update_one_way(self, one_way: bool) -> FlightBookerData:
-        return self._replace(one_way= one_way)
-    
-    def update_start_date(self, start_date: datetime.datetime) -> FlightBookerData:
-        return self._replace(start_date= start_date)
-
-    def update_return_date(self, return_date: datetime.datetime) -> FlightBookerData:
-        return self._replace(return_date= return_date)
-
-    def is_valid(self) -> bool:
-        return (
-            (
-                self.one_way and
-                self.start_date is not None
-            ) or
-            (
-                not self.one_way and
-                self.start_date is not None and
-                self.return_date is not None and
-                self.return_date >= self.start_date
-            )
-        )
-
     
 class FlightBookerProgress(Enum):
     CONTACTING_SERVER = auto()
@@ -47,9 +24,23 @@ class FlightBookerModel:
 
     def build_data(self) -> FlightBookerData:
         return FlightBookerData()
-    
+
+    def is_valid(self, data: FlightBookerData) -> bool:
+        return (
+            (
+                data.one_way and
+                data.start_date is not None
+            ) or
+            (
+                not data.one_way and
+                data.start_date is not None and
+                data.return_date is not None and
+                data.return_date >= data.start_date
+            )
+        )
+
     def do_book(self, booking_data: FlightBookerData) -> Iterator[FlightBookerProgress]:
-        if not booking_data.is_valid():
+        if not self.is_valid(booking_data):
             raise ValueError(f"Invalid {booking_data=}")
         yield FlightBookerProgress.CONTACTING_SERVER
         time.sleep(random.uniform(0, 1))
