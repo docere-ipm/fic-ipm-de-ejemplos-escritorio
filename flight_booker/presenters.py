@@ -10,7 +10,7 @@ from models import FlightBookerModel, FlightBookerProgress
 from views import FlightBookerView, UIText, run, run_on_main_thread
 
 
-from date_utils import parse_date
+from date_utils import date_sample, parse_date, show_date
 
 
 class FlightBookerPresenter:
@@ -22,6 +22,8 @@ class FlightBookerPresenter:
         self.model = model or FlightBookerModel()
         self.view = view or FlightBookerView()
         self.data = self.model.build_data()
+        self.start_date_text = ""
+        self.return_date_text = ""
 
     def run(self, application_id: str) -> None:
         self.view.set_handler(self)
@@ -36,12 +38,14 @@ class FlightBookerPresenter:
     
     def on_start_date_changed(self, text: str) -> None:
         text = text.strip()
+        self.start_date_text = text
         date = parse_date(text)
         self.data = self.data._replace(start_date= date)
         self._update_view()
                 
     def on_return_date_changed(self, text: str) -> None:
         text = text.strip()
+        self.return_date_text = text
         date = parse_date(text)
         self.data = self.data._replace(return_date= date)
         self._update_view()
@@ -106,15 +110,20 @@ class FlightBookerPresenter:
         
         if self.model.is_valid(self.data):
             book_enabled = True
-            start_date_error = False
-            return_date_error = self.data.return_date is None
+            start_date_error = None
+            return_date_error = None
         else:
-            if self.data.start_date is not None:
-                start_date_error = False
-                return_date_error = True
+            if self.start_date_text == "":
+                start_date_error = UIText.MANDATORY_FIELD.value
             else:
-                start_date_error = True
-                return_date_error = self.data.return_date is not None
+                start_date_error = UIText.WRONG_DATE_FORMAT.value.format(show_date(date_sample))
+            if self.data.one_way:
+                return_date_error = None
+            else:
+                if return_date_text == "":
+                    return_date_error =  UIText.MANDATORY_FIELD.value
+                else:
+                    return_date_error = UIText.WRONG_DATE_FORMAT.value.format(show_date(date_sample))
             book_enabled = False
         self.view.update(
             start_date_error= start_date_error,
