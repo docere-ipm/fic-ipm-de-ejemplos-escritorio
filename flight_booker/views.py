@@ -229,7 +229,9 @@ class FlightBookerView:
         self.return_date_entry.show_feedback(return_date_feedback)
         self.return_date_entry.set_sensitive(return_date_enabled)
         self.book_button.set_sensitive(book_enabled)
-
+        # HACK: Parece la única forma "razonable" de que la ventana
+        # cambie el tamaño cuando aparece y desaparece el feedback
+        self.window.set_default_size(self.window.get_width(), 0)
 
     def show_info(self, text: str) -> None:
         dialog = Gtk.MessageDialog(
