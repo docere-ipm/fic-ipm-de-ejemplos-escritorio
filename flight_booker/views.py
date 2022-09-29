@@ -26,7 +26,7 @@ class UIText(Enum):
     WAITING_ANSWER = _("Waiting for server's response ...")
     WRONG_DATE_FORMAT = _("Wrong date format. Should be: {0}")
     MANDATORY_FIELD = _("This field is mandatory")
-    
+    INVALID_DATE = _("Date is not valid")
 
 def run(application_id: str, on_activate: Callable) -> None:
     app = Gtk.Application(application_id= application_id)
@@ -51,13 +51,72 @@ class FlightBookerViewHandler(Protocol):
 WINDOW_PADDING = 20
 
 
+def toogle_class(widget: Gtk.Widget, class_name: str, value: bool) -> None:
+    if value:
+        widget.get_style_context().remove_class(class_name)
+    else:
+        widget.get_style_context().add_class(class_name)        
+
+
+class DateEntry:
+    def __init__(
+            self,
+            label: str,
+            handler: Callable[[Gtk.Widget], None]
+    ) -> tuple[Gtk.Widget, Gtk.Widget]:
+        box = Gtk.Box(
+            orientation= Gtk.Orientation.HORIZONTAL,
+            homogeneous= False,
+            spacing= 10,
+            hexpand= True
+        )
+        box.append(
+            Gtk.Label(label= label, hexpand= True, halign= Gtk.Align.START)
+        )
+        vbox = Gtk.Box(
+            orientation= Gtk.Orientation.VERTICAL,
+            homogeneous= False,
+            spacing= 0,
+            hexpand= True
+        )
+        vbox.append(
+            entry := Gtk.Entry(
+                text= "",
+                hexpand= False,
+                halign= Gtk.Align.END
+            )
+        )
+        vbox.append(
+            msg := Gtk.Label(label= "Algho farias", wrap= True, hexpand= True, halign= Gtk.Align.START)
+        )
+        box.append(vbox)
+        msg.get_style_context().add_class('error')
+        msg.hide()
+        entry.set_placeholder_text(_("Example: {}").format(show_date(date_sample)))
+        entry.connect('changed', handler)
+        self.widget = box
+        self.entry = entry
+        self.msg = msg
+
+    def set_error(self, value: bool) -> None:
+        toogle_class(self.entry, 'error', value)
+
+    def show_msg(self, text: Optional[str]) -> None:
+        if text is not None:
+            self.msg.set_label(text)
+            self.msg.show()
+        else:
+            self.msg.hide()
+
+    def set_sensitive(self, value: bool) -> None:
+        self.entry.set_sensitive(value)
+        
+
 class FlightBookerView:
     window: Gtk.ApplicationWindow = None
     flight_type: Gtk.ComboBox = None
-    start_date_entry: Gtk.Entry = None
-    start_date_error_label: Gtk.Entry = None
-    return_date_entry: Gtk.Entry = None
-    retrun_date_error_label: Gtk.Entry = None
+    start_date_entry: DateEntry = None
+    return_date_entry: DateEntry = None
     
     def __init__(self):
         self.handler = None
@@ -133,67 +192,20 @@ class FlightBookerView:
         box.append(flight_type)
         return box
 
-    def _date_input(
-            self,
-            label: str,
-            handler: Callable[[Gtk.Widget], None]
-    ) -> tuple[Gtk.Widget, Gtk.Widget]:
-        box = Gtk.Box(
-            orientation= Gtk.Orientation.HORIZONTAL,
-            homogeneous= False,
-            spacing= 10,
-            hexpand= True
-        )
-        box.append(
-            Gtk.Label(label= label, hexpand= True, halign= Gtk.Align.START)
-        )
-        vbox = Gtk.Box(
-            orientation= Gtk.Orientation.VERTICAL,
-            homogeneous= False,
-            spacing= 0,
-            hexpand= True
-        )
-        vbox.append(
-            entry := Gtk.Entry(
-                text= "",
-                hexpand= False,
-                halign= Gtk.Align.END
-            )
-        )
-        vbox.append(
-            error := Gtk.Label(label= "Algho farias", wrap= True, hexpand= True, halign= Gtk.Align.START)
-        )
-        box.append(vbox)
-        error.get_style_context().add_class('error')
-        error.hide()
-        entry.set_placeholder_text(_("Example: {}").format(show_date(date_sample)))
-        entry.connect('changed', handler)
-        return box, entry, error
-
     def start_date_input(self) -> Gtk.Widget:
-        box, entry, error = self._date_input(
+        self.start_date_entry = DateEntry(
             _("Start date:"),
             lambda wg: self.handler.on_start_date_changed(text= wg.get_text())
         )
-        self.start_date_entry = entry
-        self.start_date_error_label = error
-        return box
+        return self.start_date_entry.widget
     
     def return_date_input(self) -> Gtk.Widget:
-        box, entry, error = self._date_input(
+        self.return_date_entry = DateEntry(
             _("Return date:"),
             lambda wg: self.handler.on_return_date_changed(text= wg.get_text())
         )
-        self.return_date_entry = entry
-        self.return_date_error_label = error
-        return box
+        return self.return_date_entry.widget
 
-    def _toogle_class(self, widget: Gtk.Widget, class_name: str, value: bool) -> None:
-        if value:
-            widget.get_style_context().remove_class(class_name)
-        else:
-            widget.get_style_context().add_class(class_name)
-                
     def update(
             self,
             start_date_error: Optional[str],
@@ -206,18 +218,12 @@ class FlightBookerView:
         # la configuración del theme de la usuaria. Por eso
         # añadimos/quitamos la clase 'error' y que se encarge la
         # librería.
-        self._toogle_class(self.start_date_entry, 'error', start_date_error is None)
-        if start_date_error is not None:
-            self.start_date_error_label.set_label(start_date_error)
-            self.start_date_error_label.show()
-        else:
-            self.start_date_error_label.hide()
-        self._toogle_class(self.return_date_entry, 'error', return_date_error is None)
-        if return_date_error is not None:
-            self.return_date_error_label.set_label(return_date_error)
-            self.return_date_error_label.show()
-        else:
-            self.return_date_error_label.hide()
+        self.start_date_entry.set_error(start_date_error is None)
+        self.start_date_entry.show_msg(start_date_error)
+        
+        self.return_date_entry.set_error(return_date_error is None)
+        self.return_date_entry.show_msg(return_date_error)
+
         self.return_date_entry.set_sensitive(return_date_enabled)
         self.book_button.set_sensitive(book_enabled)
 
