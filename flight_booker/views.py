@@ -24,7 +24,7 @@ class UIText(Enum):
     CONTACTING_SERVER = _("Contacting server ...")
     SENDING_DATA = _("Sending booking data ...")
     WAITING_ANSWER = _("Waiting for server's response ...")
-    WRONG_DATE_FORMAT = _("Wrong date format. Should be: {0}")
+    WRONG_DATE_FORMAT = _("Date format is: {0}")
     MANDATORY_FIELD = _("This field is mandatory")
     INVALID_DATE = _("Date is not valid")
 
@@ -53,9 +53,9 @@ WINDOW_PADDING = 20
 
 def toogle_class(widget: Gtk.Widget, class_name: str, value: bool) -> None:
     if value:
-        widget.get_style_context().remove_class(class_name)
+        widget.get_style_context().add_class(class_name)
     else:
-        widget.get_style_context().add_class(class_name)        
+        widget.get_style_context().remove_class(class_name)        
 
 
 class DateEntry:
@@ -98,16 +98,28 @@ class DateEntry:
         self.entry = entry
         self.msg = msg
 
-    def set_error(self, value: bool) -> None:
-        toogle_class(self.entry, 'error', value)
-
-    def show_msg(self, text: Optional[str]) -> None:
-        if text is not None:
-            self.msg.set_label(text)
-            self.msg.show()
-        else:
+    def show_feedback(self, feedback: Optional[tuple[str, str]]) -> None:
+        # Siempre que hay un feedback es porque el dato no es correcto,
+        # y al reves, si no hay feeback es porque el datao es correcto.
+        if feedback is None:
+            toogle_class(self.entry, 'error', False)
             self.msg.hide()
-
+        else:
+            cls_name, text = feedback
+            toogle_class(self.entry, 'error', True)
+            if cls_name == 'error':
+                toogle_class(self.msg, 'error', True)
+                toogle_class(self.msg, 'warning', False)
+                self.msg.set_label(text)
+                self.msg.show()
+            elif cls_name == 'info':
+                toogle_class(self.msg, 'warning', True)
+                toogle_class(self.msg, 'error', False)
+                self.msg.set_label(text)
+                self.msg.show()
+            else:
+                raise ValueError(f"Unkown feedback.{cls_name=}")
+        
     def set_sensitive(self, value: bool) -> None:
         self.entry.set_sensitive(value)
         
@@ -208,22 +220,13 @@ class FlightBookerView:
 
     def update(
             self,
-            start_date_error: Optional[str],
-            return_date_error: Optional[str],
+            start_date_feedback: Optional[tuple[str, str]],
+            return_date_feedback: Optional[tuple[str, str]],
             return_date_enabled: bool,
             book_enabled: bool
     ) -> None:
-        # :IMPORTANTE: Para marcar un error no podemos cambiar
-        # directamente el aspecto del Entry. Tenemos que hacerlo según
-        # la configuración del theme de la usuaria. Por eso
-        # añadimos/quitamos la clase 'error' y que se encarge la
-        # librería.
-        self.start_date_entry.set_error(start_date_error is None)
-        self.start_date_entry.show_msg(start_date_error)
-        
-        self.return_date_entry.set_error(return_date_error is None)
-        self.return_date_entry.show_msg(return_date_error)
-
+        self.start_date_entry.show_feedback(start_date_feedback)
+        self.return_date_entry.show_feedback(return_date_feedback)
         self.return_date_entry.set_sensitive(return_date_enabled)
         self.book_button.set_sensitive(book_enabled)
 

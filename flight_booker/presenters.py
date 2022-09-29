@@ -110,28 +110,34 @@ class FlightBookerPresenter:
         
         if self.model.is_valid(self.data):
             book_enabled = True
-            start_date_error = None
-            return_date_error = None
+            start_date_feedback = None
+            return_date_feedback = None
         else:
             if self.start_date_text == "":
-                start_date_error = UIText.MANDATORY_FIELD.value
+                start_date_feedback = ('error', UIText.MANDATORY_FIELD.value)
             elif self.data.start_date is None:
-                start_date_error = UIText.WRONG_DATE_FORMAT.value.format(show_date(date_sample))
+                start_date_feedback = (
+                    'info',
+                    UIText.WRONG_DATE_FORMAT.value.format(show_date(date_sample))
+                )
             else:
-                start_date_error = None
+                start_date_feedback = None
             if self.data.one_way:
-                return_date_error = None
+                return_date_feedback = None
             else:
                 if self.return_date_text == "":
-                    return_date_error =  UIText.MANDATORY_FIELD.value
+                    return_date_feedback =  ('error', UIText.MANDATORY_FIELD.value)
                 elif self.data.return_date is None:
-                    return_date_error = UIText.WRONG_DATE_FORMAT.value.format(show_date(date_sample))
+                    return_date_feedback = (
+                        'info',
+                        UIText.WRONG_DATE_FORMAT.value.format(show_date(date_sample))
+                    )
                 else:
-                    return_date_error = UIText.INVALID_DATE.value
+                    return_date_feedback = ('error', UIText.INVALID_DATE.value)
             book_enabled = False
         self.view.update(
-            start_date_error= start_date_error,
-            return_date_error= return_date_error,
+            start_date_feedback= start_date_feedback,
+            return_date_feedback= return_date_feedback,
             return_date_enabled= not self.data.one_way,
             book_enabled= book_enabled,
         )
